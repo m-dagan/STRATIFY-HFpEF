@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRATIFY-HFpEF Risk Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --low-dark: #2d6a2d;
+    --low-mid: #4a9e4a;
+    --low-light: #d4edda;
+    --low-border: #a8d5a8;
+    --int-dark: #b06000;
+    --int-mid: #e07b00;
+    --int-light: #fff0d6;
+    --int-border: #f5c97a;
+    --high-dark: #9b1b1b;
+    --high-mid: #cc2b2b;
+    --high-light: #fde0e0;
+    --high-border: #f5a0a0;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1a2332;
+    --text-muted: #5a6a7e;
+    --border: #dde3ec;
+    --header-bg: #1a2c4a;
+    --accent: #2453a0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--header-bg);
+    color: white;
+    padding: 20px 20px 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,255,255,0.02) 20px,
+      rgba(255,255,255,0.02) 40px
+    );
+  }
+  header h1 {
+    font-family: 'Source Serif 4', serif;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    position: relative;
+  }
+  header h1 span { color: #7eb8f7; }
+  header p {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 4px;
+    position: relative;
+    font-weight: 300;
+  }
+
+  .risk-legend {
+    display: flex;
+    gap: 0;
+    margin: 14px 16px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    position: relative;
+  }
+  .risk-legend div {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .legend-low { background: var(--low-mid); color: white; }
+  .legend-int { background: var(--int-mid); color: white; }
+  .legend-high { background: var(--high-mid); color: white; }
+
+  .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+  .disclaimer {
+    background: #e8edf5;
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .disclaimer strong { color: var(--accent); }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 18px 0 10px;
+  }
+
+  .var-card {
+    background: var(--card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .var-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px 9px;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafd;
+  }
+  .var-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+  }
+  .var-name em {
+    font-style: normal;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 6px;
+  }
+  .var-abbr {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    opacity: 0.35;
+    line-height: 1;
+  }
+
+  .options-row {
+    display: flex;
+    gap: 0;
+  }
+  .opt-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border);
+    transition: all 0.15s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .opt-btn:last-child { border-right: none; }
+  .opt-btn .opt-range { display: block; font-size: 0.68rem; margin-bottom: 2px; color: inherit; }
+  .opt-btn .opt-pts { display: block; font-size: 0.78rem; font-weight: 700; color: inherit; }
+
+  .opt-btn.sel-low { background: var(--low-light); color: var(--low-dark); border-color: var(--low-border); }
+  .opt-btn.sel-int { background: var(--int-light); color: var(--int-dark); border-color: var(--int-border); }
+  .opt-btn.sel-high { background: var(--high-light); color: var(--high-dark); border-color: var(--high-border); }
+
+  .opt-btn:hover:not(.sel-low):not(.sel-int):not(.sel-high) { background: #f0f4ff; }
+
+  /* Score bar */
+  .score-panel {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 18px;
+    margin: 18px 0 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .score-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .score-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+  .score-num {
+    font-family: 'Source Serif 4', serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1;
+    transition: all 0.3s;
+  }
+  .score-denom { font-size: 1rem; color: var(--text-muted); font-weight: 300; }
+  .risk-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.3s;
+  }
+  .badge-low { background: var(--low-light); color: var(--low-dark); border: 1.5px solid var(--low-border); }
+  .badge-int { background: var(--int-light); color: var(--int-dark); border: 1.5px solid var(--int-border); }
+  .badge-high { background: var(--high-light); color: var(--high-dark); border: 1.5px solid var(--high-border); }
+  .badge-none { background: #eee; color: #999; border: 1.5px solid #ddd; }
+
+  .score-bar-wrap {
+    height: 10px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.4s ease, background 0.4s ease;
+    width: 0%;
+  }
+  .bar-low { background: linear-gradient(90deg, var(--low-mid), var(--low-dark)); }
+  .bar-int { background: linear-gradient(90deg, var(--int-mid), var(--int-dark)); }
+  .bar-high { background: linear-gradient(90deg, var(--high-mid), var(--high-dark)); }
+  .bar-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+  }
+
+  /* Results */
+  .results-panel {
+    display: none;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .results-panel.visible { display: block; }
+
+  .results-title {
+    padding: 12px 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: white;
+    background: var(--header-bg);
+  }
+
+  .outcome-section { border-bottom: 1px solid var(--border); }
+  .outcome-section:last-child { border-bottom: none; }
+
+  .outcome-header {
+    padding: 11px 16px 9px;
+    background: #f8fafd;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .outcome-icon { font-size: 1rem; }
+
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .time-cell {
+    padding: 12px 10px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .time-cell:last-child { border-right: none; }
+  .time-label { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .time-value { font-family: 'Source Serif 4', serif; font-size: 1.5rem; font-weight: 700; line-height: 1; }
+  .time-unit { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+
+  .val-low { color: var(--low-dark); }
+  .val-int { color: var(--int-dark); }
+  .val-high { color: var(--high-dark); }
+  .val-none { color: #bbb; }
+
+  .ci-note { font-size: 0.6rem; color: var(--text-muted); padding: 6px 16px 8px; font-style: italic; }
+
+  /* Group note */
+  .group-note {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  .group-note strong { color: var(--text); }
+
+  .calc-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--header-bg);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 14px 0 8px;
+    letter-spacing: 0.3px;
+    transition: background 0.2s;
+  }
+  .calc-btn:hover { background: #243d63; }
+
+  .reset-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { background: var(--border); color: var(--text); }
+
+  .incomplete-msg {
+    display: none;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: #7a5900;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 380px) {
+    .options-row { flex-wrap: wrap; }
+    .opt-btn { min-width: 33%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>STRATIFY-<span>HFpEF</span></h1>
+  <p>Mortality &amp; Heart Failure Hospitalisation Risk Calculator</p>
+  <div class="risk-legend">
+    <div class="legend-low">Low Risk ≤2</div>
+    <div class="legend-int">Intermediate Risk 3–5</div>
+    <div class="legend-high">High Risk ≥6</div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="disclaimer">
+    <strong>Clinical decision support only.</strong> This tool is intended to supplement, not replace, clinical judgement. Results should be interpreted in the context of the full clinical picture.
+  </div>
+
+  <div class="section-label">Patient Variables — Score /15</div>
+
+  <!-- GLS / Strain -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>S</b>train <em>LV GLS, |%|</em></div>
+      </div>
+      <div class="var-abbr">S</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="gls" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">≥16</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="gls" data-pts="1" data-risk="high" onclick="select(this)">
+        <span class="opt-range">&lt;16</span>
+        <span class="opt-pts">1 pt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAPSE/RVSP -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>T</b>APSE/RVSP <em>mm/mmHg</em></div>
+      </div>
+      <div class="var-abbr">T</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="tapse" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">&gt;0.85</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="tapse" data-pts="1" data-risk="int" onclick="select(this)">
+        <span class="opt-range">0.63–0.85</span>
+        <span class="opt-pts">1 pt</span>
+      </button>
+      <button class="opt-btn" data-var="tapse" data-pts="3" data-risk="high" onclick="select(this)">
+        <span class="opt-range">&lt;0.63</span>
+        <span class="opt-pts">3 pts</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Haemoglobin -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>R</b>ed cells <em>Hb, g/L</em></div>
+      </div>
+      <div class="var-abbr">R</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="hb" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">&gt;120</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="hb" data-pts="2" data-risk="int" onclick="select(this)">
+        <span class="opt-range">100–120</span>
+        <span class="opt-pts">2 pts</span>
+      </button>
+      <button class="opt-btn" data-var="hb" data-pts="3" data-risk="high" onclick="select(this)">
+        <span class="opt-range">&lt;100</span>
+        <span class="opt-pts">3 pts</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- AF -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>A</b>trial Fibrillation</div>
+      </div>
+      <div class="var-abbr">A</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="af" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">No</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="af" data-pts="1" data-risk="high" onclick="select(this)">
+        <span class="opt-range">Yes</span>
+        <span class="opt-pts">1 pt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- COPD -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>T</b>horacic disease <em>COPD</em></div>
+      </div>
+      <div class="var-abbr">T</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="copd" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">No</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="copd" data-pts="1" data-risk="high" onclick="select(this)">
+        <span class="opt-range">Yes</span>
+        <span class="opt-pts">1 pt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- E/e' -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>I</b>ncreased filling pressure <em>Average E/e'</em></div>
+      </div>
+      <div class="var-abbr">I</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="ee" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">&lt;11</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="ee" data-pts="1" data-risk="high" onclick="select(this)">
+        <span class="opt-range">≥11</span>
+        <span class="opt-pts">1 pt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- eGFR -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name"><b>F</b>iltration <em>eGFR, ml/min/1.73m²</em></div>
+      </div>
+      <div class="var-abbr">F</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="egfr" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">≥60</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="egfr" data-pts="2" data-risk="int" onclick="select(this)">
+        <span class="opt-range">30–59</span>
+        <span class="opt-pts">2 pts</span>
+      </button>
+      <button class="opt-btn" data-var="egfr" data-pts="3" data-risk="high" onclick="select(this)">
+        <span class="opt-range">&lt;30</span>
+        <span class="opt-pts">3 pts</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- BMI -->
+  <div class="var-card">
+    <div class="var-header">
+      <div>
+        <div class="var-name">bod<b>Y</b> mass index <em>BMI, kg/m²</em></div>
+      </div>
+      <div class="var-abbr">Y</div>
+    </div>
+    <div class="options-row">
+      <button class="opt-btn" data-var="bmi" data-pts="0" data-risk="low" onclick="select(this)">
+        <span class="opt-range">≥22</span>
+        <span class="opt-pts">0 pts</span>
+      </button>
+      <button class="opt-btn" data-var="bmi" data-pts="2" data-risk="high" onclick="select(this)">
+        <span class="opt-range">&lt;22</span>
+        <span class="opt-pts">2 pts</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Score display -->
+  <div class="score-panel">
+    <div class="score-top">
+      <div>
+        <div class="score-label">Total Score</div>
+        <div class="score-num" id="scoreNum">—<span class="score-denom"></span></div>
+      </div>
+      <div class="risk-badge badge-none" id="riskBadge">—</div>
+    </div>
+    <div class="score-bar-wrap">
+      <div class="score-bar-fill" id="scoreBar"></div>
+    </div>
+    <div class="bar-ticks">
+      <span>0</span><span>2</span><span>5</span><span>10</span><span>15</span>
+    </div>
+  </div>
+
+  <div class="incomplete-msg" id="incompleteMsg">⚠ Please complete all 8 variables before calculating.</div>
+
+  <button class="calc-btn" onclick="calculate()">Calculate Outcomes</button>
+  <button class="reset-btn" onclick="resetAll()">↺ Reset all fields</button>
+
+  <!-- Results -->
+  <div class="results-panel" id="resultsPanel">
+    <div class="results-title" id="resultsTitle">Predicted Outcomes</div>
+
+    <div class="outcome-section">
+      <div class="outcome-header"><span class="outcome-icon">💀</span> All-Cause Mortality</div>
+      <div class="time-grid">
+        <div class="time-cell">
+          <div class="time-label">1 Year</div>
+          <div class="time-value val-none" id="acm1">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">5 Year</div>
+          <div class="time-value val-none" id="acm5">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">10 Year</div>
+          <div class="time-value val-none" id="acm10">—</div>
+          <div class="time-unit">%</div>
+        </div>
+      </div>
+      <div class="ci-note" id="acmNote"></div>
+    </div>
+
+    <div class="outcome-section">
+      <div class="outcome-header"><span class="outcome-icon">❤️</span> CV Mortality</div>
+      <div class="time-grid">
+        <div class="time-cell">
+          <div class="time-label">1 Year</div>
+          <div class="time-value val-none" id="cvm1">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">5 Year</div>
+          <div class="time-value val-none" id="cvm5">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">10 Year</div>
+          <div class="time-value val-none" id="cvm10">—</div>
+          <div class="time-unit">%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outcome-section">
+      <div class="outcome-header"><span class="outcome-icon">🏥</span> HF Hospitalisation</div>
+      <div class="time-grid">
+        <div class="time-cell">
+          <div class="time-label">1 Year</div>
+          <div class="time-value val-none" id="hfh1">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">5 Year</div>
+          <div class="time-value val-none" id="hfh5">—</div>
+          <div class="time-unit">%</div>
+        </div>
+        <div class="time-cell">
+          <div class="time-label">10 Year</div>
+          <div class="time-value val-none" id="hfh10">—</div>
+          <div class="time-unit">%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-note" id="groupNote"></div>
+  </div>
+
+  <footer>
+    STRATIFY-HFpEF · For clinical decision support only<br>
+    Validate all results against clinical context · Not for standalone diagnostic use<br><br>
+    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">
+      &#9426; CC BY 4.0
+    </a>
+    — This tool may be freely used and adapted provided appropriate credit is given to the original author.
+  </footer>
+</div>
+
+<script>
+// ─── Data tables ───────────────────────────────────────────────────────────
+// All-cause mortality by integer score (from Predicted_mortality_by_score.xlsx)
+const acmByScore = {
+  0:  { y1: 1.7,  y5: 7.0,  y10: 14.7, ci1: '[1.7–1.7]',   ci5: '[7.0–7.0]',   ci10: '[14.7–14.7]'  },
+  1:  { y1: 2.2,  y5: 8.8,  y10: 18.3, ci1: '[2.2–2.2]',   ci5: '[8.8–8.8]',   ci10: '[18.3–18.3]'  },
+  2:  { y1: 2.7,  y5: 11.1, y10: 22.6, ci1: '[2.7–2.7]',   ci5: '[11.1–11.1]', ci10: '[22.6–22.6]'  },
+  3:  { y1: 3.5,  y5: 13.8, y10: 27.8, ci1: '[3.5–3.5]',   ci5: '[13.8–13.8]', ci10: '[27.8–27.8]'  },
+  4:  { y1: 4.4,  y5: 17.3, y10: 34.0, ci1: '[4.4–4.4]',   ci5: '[17.3–17.3]', ci10: '[34.0–34.0]'  },
+  5:  { y1: 5.6,  y5: 21.4, y10: 41.0, ci1: '[5.6–5.6]',   ci5: '[21.4–21.4]', ci10: '[41.0–41.0]'  },
+  6:  { y1: 7.0,  y5: 26.4, y10: 48.9, ci1: '[7.0–7.0]',   ci5: '[26.4–26.4]', ci10: '[48.9–48.9]'  },
+  7:  { y1: 8.9,  y5: 32.3, y10: 57.4, ci1: '[8.9–8.9]',   ci5: '[32.3–32.3]', ci10: '[57.4–57.4]'  },
+  8:  { y1: 11.1, y5: 39.1, y10: 66.2, ci1: '[11.1–11.1]', ci5: '[39.1–39.1]', ci10: '[66.2–66.2]'  },
+  9:  { y1: 13.9, y5: 46.7, y10: 74.8, ci1: '[13.9–13.9]', ci5: '[46.7–46.7]', ci10: '[74.8–74.8]'  },
+  10: { y1: 17.4, y5: 55.1, y10: 82.7, ci1: '[17.4–17.4]', ci5: '[55.1–55.1]', ci10: '[82.7–82.7]'  },
+  11: { y1: 21.5, y5: 63.9, y10: 89.3, ci1: '[21.5–21.5]', ci5: '[63.9–63.9]', ci10: '[89.3–89.3]'  },
+  12: { y1: 26.5, y5: 72.6, y10: 94.1, ci1: '[26.5–26.5]', ci5: '[72.6–72.6]', ci10: '[94.1–94.1]'  },
+  13: { y1: 32.4, y5: 80.7, y10: 97.3, ci1: '[32.4–32.4]', ci5: '[80.7–80.7]', ci10: '[97.3–97.3]'  },
+  14: { y1: 39.3, y5: 87.7, y10: 99.0, ci1: '[39.3–39.3]', ci5: '[87.7–87.7]', ci10: '[99.0–99.0]'  },
+};
+
+// CV mort & HFH by risk group (from CVmort_HFH_by_risk.xlsx)
+const cvmHFHByGroup = {
+  Low:          { cvm1: 0.3, cvm5: 0.9, cvm10: 1.6,  hfh1: 5.1,  hfh5: 14.5, hfh10: 21.8 },
+  Intermediate: { cvm1: 0.9, cvm5: 3.1, cvm10: 5.2,  hfh1: 10.6, hfh5: 27.1, hfh10: 39.7 },
+  High:         { cvm1: 2.7, cvm5: 8.9, cvm10: 12.5, hfh1: 19.9, hfh5: 43.5, hfh10: 60.6 },
+};
+
+// All-cause median IQR by risk group
+const acmGroupCI = {
+  Low:          { ci1: '[1.7–2.7]', ci5: '[7.0–11.1]',  ci10: '[14.7–22.6]' },
+  Intermediate: { ci1: '[3.5–5.6]', ci5: '[13.8–21.4]', ci10: '[27.8–41.0]' },
+  High:         { ci1: '[7.0–13.9]',ci5: '[26.4–46.7]', ci10: '[48.9–74.8]' },
+};
+
+const vars = ['gls','tapse','hb','af','copd','ee','egfr','bmi'];
+const selections = {};
+
+function select(btn) {
+  const v = btn.dataset.var;
+  const pts = parseInt(btn.dataset.pts);
+  const risk = btn.dataset.risk;
+
+  // Deselect siblings
+  btn.closest('.options-row').querySelectorAll('.opt-btn').forEach(b => {
+    b.classList.remove('sel-low','sel-int','sel-high');
+  });
+
+  // Apply colour class
+  const cls = risk === 'low' ? 'sel-low' : risk === 'int' ? 'sel-int' : 'sel-high';
+  btn.classList.add(cls);
+
+  selections[v] = pts;
+  updateScore();
+}
+
+function updateScore() {
+  const complete = vars.every(v => selections[v] !== undefined);
+  if (!complete) {
+    const partial = vars.reduce((s, v) => s + (selections[v] || 0), 0);
+    document.getElementById('scoreNum').textContent = partial + '';
+    document.getElementById('scoreBar').className = 'score-bar-fill';
+    document.getElementById('scoreBar').style.width = (partial / 15 * 100) + '%';
+    document.getElementById('riskBadge').className = 'risk-badge badge-none';
+    document.getElementById('riskBadge').textContent = '—';
+    return;
+  }
+
+  const score = vars.reduce((s, v) => s + selections[v], 0);
+  document.getElementById('scoreNum').textContent = score + '/15';
+
+  let group, badgeClass, barClass, barColor;
+  if (score <= 2)      { group = 'Low';          badgeClass = 'badge-low'; barClass = 'bar-low'; }
+  else if (score <= 5) { group = 'Intermediate'; badgeClass = 'badge-int'; barClass = 'bar-int'; }
+  else                  { group = 'High';         badgeClass = 'badge-high'; barClass = 'bar-high'; }
+
+  const bar = document.getElementById('scoreBar');
+  bar.className = 'score-bar-fill ' + barClass;
+  bar.style.width = (score / 15 * 100) + '%';
+
+  const badge = document.getElementById('riskBadge');
+  badge.className = 'risk-badge ' + badgeClass;
+  badge.textContent = group + ' Risk';
+}
+
+function calculate() {
+  const complete = vars.every(v => selections[v] !== undefined);
+  const msg = document.getElementById('incompleteMsg');
+
+  if (!complete) {
+    msg.style.display = 'block';
+    document.getElementById('resultsPanel').classList.remove('visible');
+    return;
+  }
+  msg.style.display = 'none';
+
+  const score = vars.reduce((s, v) => s + selections[v], 0);
+  let group;
+  if (score <= 2)      group = 'Low';
+  else if (score <= 5) group = 'Intermediate';
+  else                  group = 'High';
+
+  const acm = acmByScore[score] || acmByScore[14];
+  const cvmHFH = cvmHFHByGroup[group];
+  const ci = acmGroupCI[group];
+
+  const valClass = group === 'Low' ? 'val-low' : group === 'Intermediate' ? 'val-int' : 'val-high';
+
+  // All-cause mort
+  setVal('acm1',  acm.y1,  valClass);
+  setVal('acm5',  acm.y5,  valClass);
+  setVal('acm10', acm.y10, valClass);
+  document.getElementById('acmNote').textContent =
+    `Score-specific estimates. Risk group median IQR: 1yr ${ci.ci1}, 5yr ${ci.ci5}, 10yr ${ci.ci10}`;
+
+  // CV mort
+  setVal('cvm1',  cvmHFH.cvm1,  valClass);
+  setVal('cvm5',  cvmHFH.cvm5,  valClass);
+  setVal('cvm10', cvmHFH.cvm10, valClass);
+
+  // HFH
+  setVal('hfh1',  cvmHFH.hfh1,  valClass);
+  setVal('hfh5',  cvmHFH.hfh5,  valClass);
+  setVal('hfh10', cvmHFH.hfh10, valClass);
+
+  // Title
+  const groupLabel = group === 'Intermediate' ? 'Intermediate Risk' : group + ' Risk';
+  document.getElementById('resultsTitle').textContent =
+    `Score ${score}/15 · ${groupLabel} — Predicted Outcomes`;
+
+  // Group note
+  const noteColor = group === 'Low' ? '#2d6a2d' : group === 'Intermediate' ? '#b06000' : '#9b1b1b';
+  const noteEl = document.getElementById('groupNote');
+  noteEl.innerHTML = `<strong style="color:${noteColor}">${groupLabel} (Score ${score}/15).</strong> CV mortality and HF hospitalisation estimates are derived from risk group; all-cause mortality is score-specific. For clinical use only.`;
+
+  document.getElementById('resultsPanel').classList.add('visible');
+  document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setVal(id, val, cls) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'time-value ' + cls;
+}
+
+function resetAll() {
+  vars.forEach(v => delete selections[v]);
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.classList.remove('sel-low','sel-int','sel-high');
+  });
+  document.getElementById('scoreNum').textContent = '—';
+  document.getElementById('scoreBar').className = 'score-bar-fill';
+  document.getElementById('scoreBar').style.width = '0%';
+  document.getElementById('riskBadge').className = 'risk-badge badge-none';
+  document.getElementById('riskBadge').textContent = '—';
+  document.getElementById('resultsPanel').classList.remove('visible');
+  document.getElementById('incompleteMsg').style.display = 'none';
+  ['acm1','acm5','acm10','cvm1','cvm5','cvm10','hfh1','hfh5','hfh10'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+    document.getElementById(id).className = 'time-value val-none';
+  });
+}
+</script>
+</body>
+</html>
